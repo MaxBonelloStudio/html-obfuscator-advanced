@@ -1,1 +1,1536 @@
-soon
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Obfuscator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --red-primary: #ff0037;
+            --red-dark: #8b0020;
+            --red-glow: rgba(255, 0, 55, 0.5);
+            --dark-bg: #0c0c0c;
+            --dark-card: rgba(26, 26, 46, 0.7);
+            --accent-color: #00ffc8;
+            --text-primary: #ffffff;
+            --text-secondary: #aaaaaa;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --neon-glow: 0 0 10px var(--red-glow), 0 0 20px var(--red-glow), 0 0 30px var(--red-glow);
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #1a1a2e 50%, #16213e 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .animated-bg {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .bg-particle {
+            position: absolute;
+            background: var(--red-glow);
+            border-radius: 50%;
+            animation: float 15s infinite linear;
+        }
+
+        @keyframes float {
+            0%   { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0.2; }
+            50%  { transform: translateY(-100px) translateX(100px) rotate(180deg); opacity: 0.6; }
+            100% { transform: translateY(0) translateX(0) rotate(360deg); opacity: 0.2; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to   { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes modalAppear {
+            from { transform: scale(0.8); opacity: 0; }
+            to   { transform: scale(1); opacity: 1; }
+        }
+
+        /* ── Main Content ── */
+        #mainContent {
+            padding: 30px;
+            animation: fadeIn 0.6s ease;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--glass-bg);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -10px; left: 50%;
+            transform: translateX(-50%);
+            width: 100px; height: 3px;
+            background: linear-gradient(90deg, var(--red-primary), #ff8a00);
+            border-radius: 3px;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            background: linear-gradient(90deg, var(--red-primary), #ff8a00);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .header p { color: var(--text-secondary); font-size: 1rem; }
+
+        /* ── Templates ── */
+        .templates-section {
+            margin-bottom: 30px;
+            animation: slideUp 0.5s ease;
+        }
+
+        .templates-section h3 {
+            color: #ff8a00;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            display: flex; align-items: center; gap: 10px;
+        }
+
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+        }
+
+        .template-card {
+            background: var(--glass-bg);
+            border-radius: 10px;
+            padding: 18px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .template-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 4px;
+            background: linear-gradient(90deg, var(--red-primary), #ff8a00);
+            transform: scaleX(0);
+            transition: transform 0.25s ease;
+        }
+
+        .template-card:hover::before,
+        .template-card.active::before { transform: scaleX(1); }
+
+        .template-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 18px rgba(0,0,0,0.3);
+            border-color: rgba(255,0,55,0.3);
+        }
+
+        .template-card.active {
+            border-color: var(--red-primary);
+            box-shadow: 0 0 18px rgba(255,0,55,0.3);
+        }
+
+        .template-icon { font-size: 2rem; margin-bottom: 8px; color: var(--red-primary); }
+        .template-name { font-weight: bold; margin-bottom: 4px; font-size: 0.95rem; }
+        .template-desc { font-size: 0.8rem; color: var(--text-secondary); }
+
+        .recommended-badge {
+            position: absolute;
+            top: -4px; right: -4px;
+            background: linear-gradient(90deg, var(--red-primary), #ff8a00);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-size: 0.65rem;
+            font-weight: bold;
+            transform: rotate(10deg);
+        }
+
+        /* ── Settings Grid ── */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+            animation: slideUp 0.6s ease;
+        }
+
+        .settings-section {
+            background: var(--glass-bg);
+            border-radius: 10px;
+            padding: 18px;
+            border-left: 3px solid var(--red-primary);
+            transition: all 0.25s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .settings-section:hover {
+            border-left-color: #ff8a00;
+        }
+
+        .settings-section h3 {
+            color: #ff8a00;
+            margin-bottom: 14px;
+            font-size: 1.1rem;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .settings-section h3 i { color: var(--red-primary); }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .setting-item:hover {
+            border-bottom-color: rgba(255,0,55,0.3);
+        }
+
+        .setting-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+
+        .setting-info { flex: 1; }
+        .setting-name { font-weight: bold; margin-bottom: 3px; color: #fff; font-size: 0.9rem; }
+        .setting-desc { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4; }
+
+        /* ── Toggle ── */
+        .toggle {
+            position: relative;
+            display: inline-block;
+            width: 48px; height: 24px;
+            margin-left: 12px;
+        }
+
+        .toggle input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #333;
+            transition: .35s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px; width: 16px;
+            left: 4px; bottom: 4px;
+            background-color: white;
+            transition: .35s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background: linear-gradient(90deg, var(--red-primary), #ff8a00);
+            box-shadow: 0 0 5px var(--red-glow);
+        }
+
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        /* ── File Drop ── */
+        .file-input-area {
+            border: 2px dashed var(--glass-border);
+            border-radius: 10px;
+            padding: 25px;
+            text-align: center;
+            margin-bottom: 18px;
+            transition: all 0.25s ease;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+        }
+
+        .file-input-area:hover { border-color: var(--red-primary); box-shadow: 0 0 10px rgba(255,0,55,0.3); }
+        .file-input-area.dragover { border-color: var(--accent-color); background: rgba(0,255,200,0.08); box-shadow: 0 0 12px rgba(0,255,200,0.4); }
+        .file-input-area i { font-size: 2.5rem; color: var(--red-primary); margin-bottom: 10px; }
+        .file-input-area p { margin-bottom: 12px; color: var(--text-secondary); font-size: 0.9rem; }
+        .file-input-area h3 { margin-bottom: 6px; font-size: 1rem; }
+
+        .file-input-btn {
+            background: rgba(255,0,55,0.15);
+            border: 1px solid var(--red-primary);
+            color: var(--red-primary);
+            padding: 8px 18px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: inline-block;
+            font-size: 0.9rem;
+        }
+
+        .file-input-btn:hover { background: rgba(255,0,55,0.35); transform: translateY(-2px); }
+        #fileInput { display: none; }
+
+        /* ── Textareas ── */
+        .input-group { margin-bottom: 22px; animation: slideUp 0.7s ease; }
+        .input-group h3 { color: #ff8a00; margin-bottom: 8px; font-size: 1.1rem; }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            background: rgba(10,15,30,0.85);
+            color: var(--accent-color);
+            border: 2px solid #333;
+            padding: 14px;
+            border-radius: 10px;
+            resize: vertical;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            transition: all 0.25s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--red-primary);
+            box-shadow: 0 0 10px rgba(255,0,55,0.3);
+        }
+
+        /* ── Stats ── */
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 18px 0;
+            flex-wrap: wrap;
+            gap: 12px;
+            animation: slideUp 0.4s ease;
+        }
+
+        .stat-card {
+            background: var(--glass-bg);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            flex: 1;
+            min-width: 110px;
+            border-left: 3px solid var(--red-primary);
+            transition: all 0.25s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 8px 18px rgba(0,0,0,0.2); border-left-color: #ff8a00; }
+        .stat-value { font-size: 1.6rem; font-weight: bold; color: var(--accent-color); }
+        .stat-label { font-size: 0.8rem; color: var(--text-secondary); }
+
+        /* ── Buttons ── */
+        .btn {
+            background: linear-gradient(90deg, var(--red-primary), #ff8a00);
+            border: none;
+            padding: 12px 32px;
+            color: white;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 5px 15px rgba(255,0,55,0.4);
+            margin-top: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: 0.4s;
+        }
+
+        .btn:hover::before { left: 100%; }
+        .btn:hover { transform: translateY(-3px) scale(1.04); box-shadow: var(--neon-glow); }
+
+        .status {
+            margin: 14px 0;
+            font-size: 1rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            transition: all 0.25s ease;
+        }
+
+        .processing { color: #ff8a00; background: rgba(255,138,0,0.1); }
+        .success    { color: var(--accent-color); background: rgba(0,255,200,0.08); }
+        .error      { color: var(--red-primary); background: rgba(255,0,55,0.1); }
+
+        .output-group { margin-top: 26px; animation: slideUp 0.8s ease; }
+        .output-group h3 { color: #ff8a00; margin-bottom: 8px; font-size: 1.1rem; }
+
+        .output-actions { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+
+        .action-btn {
+            background: rgba(255,0,55,0.15);
+            border: 1px solid var(--red-primary);
+            color: #ff8a00;
+            padding: 9px 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-weight: bold;
+            font-size: 0.85rem;
+            display: flex; align-items: center; gap: 7px;
+            position: relative; overflow: hidden;
+        }
+
+        .action-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+            transition: 0.4s;
+        }
+
+        .action-btn:hover::before { left: 100%; }
+        .action-btn:hover { background: rgba(255,0,55,0.35); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255,0,55,0.3); }
+
+        .footer { text-align: center; margin-top: 36px; color: #555; font-size: 0.85rem; }
+
+        /* ── Additional Inputs ── */
+        .additional-input {
+            margin-top: 8px;
+            display: none;
+            animation: slideDown 0.25s ease;
+        }
+
+        .additional-input input, .additional-input textarea {
+            width: 100%;
+            padding: 9px;
+            background: rgba(10,15,30,0.85);
+            border: 1px solid #444;
+            border-radius: 5px;
+            color: var(--accent-color);
+            margin-top: 4px;
+            transition: all 0.25s ease;
+            font-size: 0.9rem;
+        }
+
+        .additional-input input:focus { border-color: var(--red-primary); box-shadow: 0 0 5px rgba(255,0,55,0.3); outline: none; }
+
+        /* ── Modals ── */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: linear-gradient(145deg, var(--dark-card), rgba(22,33,62,0.7));
+            border-radius: 15px;
+            padding: 28px;
+            width: 90%; max-width: 480px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid var(--glass-border);
+            animation: modalAppear 0.4s ease;
+            backdrop-filter: blur(15px);
+        }
+
+        .modal h2 { color: #ff8a00; margin-bottom: 18px; text-align: center; }
+
+        .modal p { margin-bottom: 14px; line-height: 1.5; color: var(--text-secondary); font-size: 0.9rem; }
+
+        .modal input {
+            width: 100%;
+            padding: 11px;
+            background: rgba(10,15,30,0.85);
+            border: 2px solid #333;
+            border-radius: 8px;
+            color: var(--accent-color);
+            font-size: 15px;
+            margin-bottom: 18px;
+            transition: all 0.25s ease;
+        }
+
+        .modal input:focus { outline: none; border-color: var(--red-primary); box-shadow: 0 0 10px rgba(255,0,55,0.3); }
+
+        .modal-buttons { display: flex; justify-content: space-between; gap: 10px; }
+
+        .modal-btn {
+            flex: 1;
+            padding: 11px;
+            border-radius: 8px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .modal-confirm { background: linear-gradient(90deg, var(--red-primary), #ff8a00); color: white; }
+        .modal-cancel  { background: rgba(255,255,255,0.08); color: #aaa; border: 1px solid #444; }
+        .modal-btn:hover { transform: translateY(-2px); }
+
+        /* ── Preview Modal ── */
+        .preview-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .preview-content {
+            background: var(--dark-bg);
+            border-radius: 12px;
+            width: 96%; height: 90%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid var(--glass-border);
+            animation: modalAppear 0.4s ease;
+            display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+
+        .preview-header {
+            background: linear-gradient(90deg, var(--red-primary), #ff8a00);
+            padding: 12px 18px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .preview-header h2 { color: white; margin: 0; font-size: 1rem; }
+
+        .close-preview {
+            background: none; border: none;
+            color: white; font-size: 1.3rem;
+            cursor: pointer; transition: all 0.2s ease;
+        }
+
+        .close-preview:hover { transform: scale(1.15); }
+        .preview-frame { flex: 1; border: none; background: white; }
+
+        /* ── Toast ── */
+        .toast {
+            position: fixed;
+            bottom: 20px; right: 20px;
+            background: rgba(22,33,62,0.95);
+            color: white;
+            padding: 14px 22px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 3000;
+            border-left: 4px solid var(--accent-color);
+            backdrop-filter: blur(10px);
+            font-size: 0.9rem;
+        }
+
+        .toast.show { transform: translateY(0); opacity: 1; }
+
+        @media (max-width: 768px) {
+            .container { padding: 18px; }
+            .header h1 { font-size: 1.8rem; }
+            .output-actions { flex-direction: column; }
+            .settings-grid { grid-template-columns: 1fr; }
+            .templates-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="animated-bg" id="animatedBg"></div>
+
+    <div id="mainContent">
+        <div class="container">
+            <div class="header">
+                <h1><i class="fas fa-shield-alt"></i> HTML Obfuscator</h1>
+                <p>Encode, encrypt, and lock down your HTML output</p>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="charCount">0</div>
+                    <div class="stat-label">Characters</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="lineCount">0</div>
+                    <div class="stat-label">Lines</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="sizeIncrease">0%</div>
+                    <div class="stat-label">Size Change</div>
+                </div>
+            </div>
+
+            <!-- Templates -->
+            <div class="templates-section">
+                <h3><i class="fas fa-layer-group"></i> Security Templates</h3>
+                <div class="templates-grid">
+                    <div class="template-card" data-template="recommended" onclick="selectTemplate('recommended')">
+                        <div class="recommended-badge">RECOMMENDED</div>
+                        <div class="template-icon"><i class="fas fa-star"></i></div>
+                        <div class="template-name">Best Security</div>
+                        <div class="template-desc">Strong protection, stable output</div>
+                    </div>
+                    <div class="template-card" data-template="maximum" onclick="selectTemplate('maximum')">
+                        <div class="template-icon"><i class="fas fa-shield-alt"></i></div>
+                        <div class="template-name">Ultra Protection</div>
+                        <div class="template-desc">All layers active (may break some sites)</div>
+                    </div>
+                    <div class="template-card" data-template="basic" onclick="selectTemplate('basic')">
+                        <div class="template-icon"><i class="fas fa-lock"></i></div>
+                        <div class="template-name">Basic</div>
+                        <div class="template-desc">Minimal overhead, essential encoding</div>
+                    </div>
+                    <div class="template-card" data-template="custom" onclick="selectTemplate('custom')">
+                        <div class="template-icon"><i class="fas fa-sliders-h"></i></div>
+                        <div class="template-name">Custom</div>
+                        <div class="template-desc">Configure settings manually</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Grid -->
+            <div class="settings-grid">
+                <!-- Protection -->
+                <div class="settings-section">
+                    <h3><i class="fas fa-shield-alt"></i> Core Protection</h3>
+
+                    <div class="setting-item" onclick="toggleSetting('base64Encode')">
+                        <div class="setting-info">
+                            <div class="setting-name">Base64 Encode</div>
+                            <div class="setting-desc">Encode HTML with Base64 — first obfuscation pass</div>
+                        </div>
+                        <label class="toggle"><input type="checkbox" id="base64Encode" checked><span class="slider"></span></label>
+                    </div>
+
+                    <div class="setting-item" onclick="toggleSetting('iframeIsolation')">
+                        <div class="setting-info">
+                            <div class="setting-name">iFrame Isolation</div>
+                            <div class="setting-desc">Render decoded content in a sandboxed iframe</div>
+                        </div>
+                        <label class="toggle"><input type="checkbox" id="iframeIsolation" checked><span class="slider"></span></label>
+                    </div>
+
+                    <div class="setting-item" onclick="toggleSetting('minifyInput')">
+                        <div class="setting-info">
+                            <div class="setting-name">Minify Input</div>
+                            <div class="setting-desc">Strip whitespace &amp; comments before encoding</div>
+                        </div>
+                        <label class="toggle"><input type="checkbox" id="minifyInput"><span class="slider"></span></label>
+                    </div>
+                </div>
+
+                <!-- Encryption -->
+                <div class="settings-section">
+                    <h3><i class="fas fa-lock"></i> Encryption Layers</h3>
+
+                    <div class="setting-item" onclick="toggleSetting('xorEncryption')">
+                        <div class="setting-info">
+                            <div class="setting-name">XOR Encryption</div>
+                            <div class="setting-desc">XOR cipher with random 32-byte key before Base64</div>
+                        </div>
+                        <label class="toggle"><input type="checkbox" id="xorEncryption"><span class="slider"></span></label>
+                    </div>
+
+                    <div class="setting-item" onclick="toggleSetting('rc4Encryption')">
+                        <div class="setting-info">
+                            <div class="setting-name">RC4 Encryption</div>
+                            <div class="setting-desc">RC4 stream cipher over XOR/Base64 output</div>
+                        </div>
+                        <label class="toggle"><input type="checkbox" id="rc4Encryption"><span class="slider"></span></label>
+                    </div>
+
+                    <div class="setting-item" onclick="toggleSetting('multiLayerEncoding')">
+                        <div class="setting-info">
+                            <div class="setting-name">Multi-layer Encoding</div>
+                            <div class="setting-desc">Triple Base64 wrap with junk variable injection</div>
+                        </div>
+                        <label class="toggle"><input type="checkbox" id="multiLayerEncoding"><span class="slider"></span></label>
+                    </div>
+
+                    <div class="setting-item" onclick="toggleSetting('lzCompression')">
+                        <div class="setting-info">
+                            <div class="setting-name">LZ String Obfuscation</div>
+                            <div class="setting-desc">Char-code scatter obfuscation applied to output script</div>
+                        </div>
+                        <label class="toggle"><input type="checkbox" id="lzCompression"><span class="slider"></span></label>
+                    </div>
+
+                    <div class="setting-item" onclick="toggleSetting('substitutionCipher')">
+                        <div class="setting-info">
+                            <div class="setting-name">Substitution Cipher</div>
+                            <div class="setting-desc">Seeded S-box byte shuffle applied before XOR/RC4</div>
+                        </div>
+                        <label class="toggle"><input type="checkbox" id="substitutionCipher"><span class="slider"></span></label>
+                    </div>
+
+                    <div class="setting-item" onclick="toggleSetting('b64Rotation')">
+                        <div class="setting-info">
+                            <div class="setting-name">Base64 Alphabet Rotation</div>
+                            <div class="setting-desc">Shifts the Base64 character set by a random offset after encoding</div>
+                        </div>
+                        <label class="toggle"><input type="checkbox" id="b64Rotation"><span class="slider"></span></label>
+                    </div>
+                </div>
+
+                <!-- Anti-Debug -->
+                <div class="settings-section">
+                    <h3><i class="fas fa-user-secret"></i> Anti-Debug / Anti-Inspect</h3>
+
+                    <div class="setting-item" onclick="toggleSetting('blockF12')">
+                        <div class="setting-info">
+                            <div class="setting-name">Block F12</div>
+                            <div class="setting-desc">Prevent F12 from opening DevTools</div>
+                        </div>
+                        <label class="toggle"><input type="checkbox" id="blockF12"><span class="slider"></span></label>
+                    </div>
+
+                    <div class="setting-item" onclick="toggleSetting('blockCtrlShiftI')">
+                        <div class="setting-info">
+                            <div class="setting-name">Block Ctrl+Shift+I</div>
+                            <div class="setting-desc">Block DevTools keyboard shortcut</div>
+                        </div>
+                        <label class="toggle"><input type="checkbox" id="blockCtrlShiftI"><span class="slider"></span></label>
+                    </div>
+
+                    <div class="setting-item" onclick="toggleSetting('blockRightClick')">
+                        <div class="setting-info">
+                            <div class="setting-name">Block Right Click</div>
+                            <div class="setting-desc">Disable context menu</div>
+                        </div>
+                        <label class="toggle"><input type="checkbox" id="blockRightClick"><span class="slider"></span></label>
+                    </div>
+
+                    <div class="setting-item" onclick="toggleSetting('blockCtrlU')">
+                        <div class="setting-info">
+                            <div class="setting-name">Block Ctrl+U</div>
+                            <div class="setting-desc">Prevent View Source shortcut</div>
+                        </div>
+                        <label class="toggle"><input type="checkbox" id="blockCtrlU"><span class="slider"></span></label>
+                    </div>
+
+                    <div class="setting-item" onclick="toggleSetting('breakIfDevToolsOpen')">
+                        <div class="setting-info">
+                            <div class="setting-name">Break if DevTools Open</div>
+                            <div class="setting-desc">Debugger timing attack — clears page if detected</div>
+                        </div>
+                        <label class="toggle"><input type="checkbox" id="breakIfDevToolsOpen"><span class="slider"></span></label>
+                    </div>
+
+                    <div class="setting-item" onclick="toggleSetting('antiTamperProtection')">
+                        <div class="setting-info">
+                            <div class="setting-name">Anti-Tamper Protection</div>
+                            <div class="setting-desc">Hash-check DOM every second, reload on mismatch</div>
+                        </div>
+                        <label class="toggle"><input type="checkbox" id="antiTamperProtection"><span class="slider"></span></label>
+                    </div>
+                </div>
+
+                <!-- Access Control -->
+                <div class="settings-section">
+                    <h3><i class="fas fa-key"></i> Access Control</h3>
+
+                    <div class="setting-item" onclick="toggleSetting('passwordProtect')">
+                        <div class="setting-info">
+                            <div class="setting-name">Password Protect</div>
+                            <div class="setting-desc">Require password to view content</div>
+                        </div>
+                        <label class="toggle"><input type="checkbox" id="passwordProtect"><span class="slider"></span></label>
+                    </div>
+                    <div class="additional-input" id="passwordInput">
+                        <input type="text" id="passwordValue" placeholder="Enter password">
+                    </div>
+
+                    <div class="setting-item" onclick="toggleSetting('expiryDate')">
+                        <div class="setting-info">
+                            <div class="setting-name">Expiry Date</div>
+                            <div class="setting-desc">Content becomes inaccessible after this date</div>
+                        </div>
+                        <label class="toggle"><input type="checkbox" id="expiryDate"><span class="slider"></span></label>
+                    </div>
+                    <div class="additional-input" id="expiryInput">
+                        <input type="date" id="expiryValue">
+                    </div>
+
+                    <div class="setting-item" onclick="toggleSetting('watermarkSignature')">
+                        <div class="setting-info">
+                            <div class="setting-name">Watermark Signature</div>
+                            <div class="setting-desc">Embed invisible author signature in output</div>
+                        </div>
+                        <label class="toggle"><input type="checkbox" id="watermarkSignature"><span class="slider"></span></label>
+                    </div>
+                    <div class="additional-input" id="watermarkInput">
+                        <input type="text" id="watermarkValue" placeholder="Your name / identifier">
+                    </div>
+
+                    <div class="setting-item" onclick="toggleSetting('lockToDomain')">
+                        <div class="setting-info">
+                            <div class="setting-name">Lock to Domain</div>
+                            <div class="setting-desc">Only runs on the specified hostname</div>
+                        </div>
+                        <label class="toggle"><input type="checkbox" id="lockToDomain"><span class="slider"></span></label>
+                    </div>
+                    <div class="additional-input" id="domainInput">
+                        <input type="text" id="domainValue" placeholder="example.com">
+                    </div>
+                </div>
+            </div>
+
+            <!-- File Drop -->
+            <div class="file-input-area" id="fileInputArea">
+                <i class="fas fa-file-upload"></i>
+                <h3>Upload HTML File</h3>
+                <p>Drag and drop here, or click to browse</p>
+                <label for="fileInput" class="file-input-btn">
+                    <i class="fas fa-folder-open"></i> Select File
+                </label>
+                <input type="file" id="fileInput" accept=".html,.htm">
+            </div>
+
+            <div class="input-group">
+                <h3>Input HTML:</h3>
+                <textarea id="input" placeholder="Paste your HTML code here, or upload a file above..." oninput="updateStats()"></textarea>
+            </div>
+
+            <button class="btn" onclick="obfuscate()">
+                <i class="fas fa-lock"></i> OBFUSCATE HTML
+            </button>
+
+            <div id="status" class="status"></div>
+
+            <div class="output-group">
+                <h3>Obfuscated Output:</h3>
+                <textarea id="output" placeholder="Obfuscated HTML will appear here..." readonly></textarea>
+                <div class="output-actions">
+                    <button class="action-btn" onclick="copyOutput()"><i class="fas fa-copy"></i> Copy</button>
+                    <button class="action-btn" onclick="showDownloadModal()"><i class="fas fa-download"></i> Download HTML</button>
+                    <button class="action-btn" onclick="showZipModal()"><i class="fas fa-file-archive"></i> Export ZIP</button>
+                    <button class="action-btn" onclick="previewOutput()"><i class="fas fa-eye"></i> Preview</button>
+                    <button class="action-btn" onclick="clearAll()"><i class="fas fa-trash"></i> Clear</button>
+                </div>
+            </div>
+
+            <div class="footer">
+                <p>HTML Obfuscator</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Download Modal -->
+    <div id="downloadModal" class="modal">
+        <div class="modal-content">
+            <h2>Save Obfuscated HTML</h2>
+            <p>Enter a filename:</p>
+            <input type="text" id="filename" placeholder="my-obfuscated-page" value="obfuscated">
+            <div class="modal-buttons">
+                <button class="modal-btn modal-cancel" onclick="hideDownloadModal()">Cancel</button>
+                <button class="modal-btn modal-confirm" onclick="downloadOutput()">Download</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ZIP Modal -->
+    <div id="zipModal" class="modal">
+        <div class="modal-content">
+            <h2>Export as ZIP</h2>
+            <p>Enter a filename for the ZIP:</p>
+            <input type="text" id="zipFilename" placeholder="my-obfuscated-files" value="obfuscated">
+            <div class="modal-buttons">
+                <button class="modal-btn modal-cancel" onclick="hideZipModal()">Cancel</button>
+                <button class="modal-btn modal-confirm" onclick="exportAsZip()">Export</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Warning Modal -->
+    <div id="warningModal" class="modal">
+        <div class="modal-content">
+            <h2><i class="fas fa-exclamation-triangle"></i> Security Warning</h2>
+            <p>Using both <strong>Access Control</strong> and <strong>Anti-Debug</strong> protections together may expose plaintext in the obfuscated HTML.</p>
+            <p>For maximum hiding, consider using only Base64 + iFrame Isolation.</p>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-cancel" onclick="hideWarningModal()">Cancel</button>
+                <button class="modal-btn modal-confirm" onclick="continueObfuscation()">Proceed Anyway</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="previewModal" class="preview-modal">
+        <div class="preview-content">
+            <div class="preview-header">
+                <h2>Preview</h2>
+                <button class="close-preview" onclick="hidePreview()"><i class="fas fa-times"></i></button>
+            </div>
+            <iframe id="previewFrame" class="preview-frame"></iframe>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+    // ── DOM refs ──────────────────────────────────────────────────────────────
+    const landingCard       = document.getElementById('landingCard');
+    const mainContent       = document.getElementById('mainContent');
+    const inputBox          = document.getElementById('input');
+    const outputBox         = document.getElementById('output');
+    const status            = document.getElementById('status');
+    const downloadModal     = document.getElementById('downloadModal');
+    const zipModal          = document.getElementById('zipModal');
+    const warningModal      = document.getElementById('warningModal');
+    const previewModal      = document.getElementById('previewModal');
+    const previewFrame      = document.getElementById('previewFrame');
+    const filenameInput     = document.getElementById('filename');
+    const zipFilenameInput  = document.getElementById('zipFilename');
+    const toast             = document.getElementById('toast');
+    const charCount         = document.getElementById('charCount');
+    const lineCount         = document.getElementById('lineCount');
+    const sizeIncrease      = document.getElementById('sizeIncrease');
+    const animatedBg        = document.getElementById('animatedBg');
+    const fileInput         = document.getElementById('fileInput');
+    const fileInputArea     = document.getElementById('fileInputArea');
+
+    const base64Encode        = document.getElementById('base64Encode');
+    const iframeIsolation     = document.getElementById('iframeIsolation');
+    const minifyInput         = document.getElementById('minifyInput');
+    const xorEncryption       = document.getElementById('xorEncryption');
+    const lzCompression       = document.getElementById('lzCompression');
+    const rc4Encryption       = document.getElementById('rc4Encryption');
+    const multiLayerEncoding  = document.getElementById('multiLayerEncoding');
+    const substitutionCipher  = document.getElementById('substitutionCipher');
+    const b64Rotation         = document.getElementById('b64Rotation');
+    const blockF12            = document.getElementById('blockF12');
+    const blockCtrlShiftI     = document.getElementById('blockCtrlShiftI');
+    const blockRightClick     = document.getElementById('blockRightClick');
+    const blockCtrlU          = document.getElementById('blockCtrlU');
+    const breakIfDevToolsOpen = document.getElementById('breakIfDevToolsOpen');
+    const antiTamperProtection= document.getElementById('antiTamperProtection');
+    const passwordProtect     = document.getElementById('passwordProtect');
+    const expiryDate          = document.getElementById('expiryDate');
+    const watermarkSignature  = document.getElementById('watermarkSignature');
+    const lockToDomain        = document.getElementById('lockToDomain');
+    const passwordValue       = document.getElementById('passwordValue');
+    const expiryValue         = document.getElementById('expiryValue');
+    const watermarkValue      = document.getElementById('watermarkValue');
+    const domainValue         = document.getElementById('domainValue');
+
+    const templates = {
+        recommended: {
+            name: "Best Security",
+            base64Encode: true, iframeIsolation: true, minifyInput: false,
+            xorEncryption: true, lzCompression: false, rc4Encryption: false, multiLayerEncoding: false,
+            substitutionCipher: false, b64Rotation: false,
+            blockF12: true, blockCtrlShiftI: true, blockRightClick: false, blockCtrlU: true,
+            breakIfDevToolsOpen: false, antiTamperProtection: false,
+            passwordProtect: false, expiryDate: false, watermarkSignature: true, lockToDomain: false
+        },
+        maximum: {
+            name: "Ultra Protection",
+            base64Encode: true, iframeIsolation: true, minifyInput: true,
+            xorEncryption: true, lzCompression: true, rc4Encryption: true, multiLayerEncoding: true,
+            substitutionCipher: true, b64Rotation: true,
+            blockF12: true, blockCtrlShiftI: true, blockRightClick: true, blockCtrlU: true,
+            breakIfDevToolsOpen: true, antiTamperProtection: true,
+            passwordProtect: false, expiryDate: false, watermarkSignature: true, lockToDomain: false
+        },
+        basic: {
+            name: "Basic",
+            base64Encode: true, iframeIsolation: true, minifyInput: false,
+            xorEncryption: false, lzCompression: false, rc4Encryption: false, multiLayerEncoding: false,
+            substitutionCipher: false, b64Rotation: false,
+            blockF12: false, blockCtrlShiftI: false, blockRightClick: false, blockCtrlU: false,
+            breakIfDevToolsOpen: false, antiTamperProtection: false,
+            passwordProtect: false, expiryDate: false, watermarkSignature: false, lockToDomain: false
+        },
+        custom: { name: "Custom" }
+    };
+
+    let currentTemplate = 'recommended';
+    let proceedWithObfuscation = false;
+
+    // ── Crypto helpers (run at obfuscation time, embedded in output) ──────────
+
+    /** XOR encrypt/decrypt bytes array with key bytes array */
+    function xorBytes(inputBytes, keyBytes) {
+        return inputBytes.map((b, i) => b ^ keyBytes[i % keyBytes.length]);
+    }
+
+    /** RC4 key schedule + PRGA */
+    function rc4(key, data) {
+        const S = Array.from({length: 256}, (_, i) => i);
+        let j = 0;
+        for (let i = 0; i < 256; i++) {
+            j = (j + S[i] + key.charCodeAt(i % key.length)) & 255;
+            [S[i], S[j]] = [S[j], S[i]];
+        }
+        let i = 0; j = 0;
+        return data.map(byte => {
+            i = (i + 1) & 255;
+            j = (j + S[i]) & 255;
+            [S[i], S[j]] = [S[j], S[i]];
+            return byte ^ S[(S[i] + S[j]) & 255];
+        });
+    }
+
+    /** Convert string → UTF-8 byte array */
+    function strToBytes(str) {
+        return Array.from(new TextEncoder().encode(str));
+    }
+
+    /** Convert byte array → binary string for btoa */
+    function bytesToBinStr(bytes) {
+        return bytes.map(b => String.fromCharCode(b)).join('');
+    }
+
+    /** Convert binary string (from atob) → byte array */
+    function binStrToBytes(str) {
+        return Array.from(str).map(c => c.charCodeAt(0));
+    }
+
+    /** Generate random key of length n (printable ASCII 33–126) */
+    function randomKey(n) {
+        return Array.from({length: n}, () => String.fromCharCode(33 + Math.floor(Math.random() * 94))).join('');
+    }
+
+    /** Build a seeded S-box (256-entry shuffle) */
+    function buildSBox(seed) {
+        const s = Array.from({length: 256}, (_, i) => i);
+        let j = 0;
+        for (let i = 0; i < 256; i++) {
+            j = (j + s[i] + seed.charCodeAt(i % seed.length)) & 255;
+            [s[i], s[j]] = [s[j], s[i]];
+        }
+        return s;
+    }
+
+    /** Invert an S-box */
+    function buildInvSBox(sbox) {
+        const inv = new Array(256);
+        for (let i = 0; i < 256; i++) inv[sbox[i]] = i;
+        return inv;
+    }
+
+    /** Apply S-box to byte array */
+    function applySubstitution(bytes, sbox) { return bytes.map(b => sbox[b]); }
+
+    /** Base64 alphabet */
+    const B64_ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+
+    function rotateB64(str, shift) {
+        return str.split('').map(c => {
+            if (c === '=') return c;
+            const i = B64_ALPHA.indexOf(c);
+            return i === -1 ? c : B64_ALPHA[(i + shift) % 64];
+        }).join('');
+    }
+
+    function randVar(prefix = '_') {
+        return prefix + Math.random().toString(36).slice(2, 9);
+    }
+
+
+    function buildEncodedPayload(html) {
+        let bytes = strToBytes(html);
+
+        let xorKey = null;
+        let rc4Key = null;
+        let subKey = null;
+        let subInv = null;
+        let b64Shift = 0;
+
+        // Step 1 — Substitution cipher
+        if (substitutionCipher.checked) {
+            subKey = randomKey(16);
+            const sbox = buildSBox(subKey);
+            subInv = buildInvSBox(sbox);
+            bytes = applySubstitution(bytes, sbox);
+        }
+
+        if (xorEncryption.checked) {
+            xorKey = randomKey(32);
+            const kBytes = strToBytes(xorKey);
+            bytes = xorBytes(bytes, kBytes);
+        }
+
+        if (rc4Encryption.checked) {
+            rc4Key = randomKey(24);
+            bytes = rc4(rc4Key, bytes);
+        }
+
+        let b64 = btoa(bytesToBinStr(bytes));
+
+        if (b64Rotation.checked) {
+            b64Shift = 1 + Math.floor(Math.random() * 62); // 1–62 so it's never a no-op
+            b64 = rotateB64(b64, b64Shift);
+        }
+
+        if (multiLayerEncoding.checked) {
+            b64 = btoa(btoa(btoa(b64)));
+        }
+
+        return { b64, xorKey, rc4Key, subKey, subInv, b64Shift };
+    }
+
+    function buildDecoderScript(b64, xorKey, rc4Key, subKey, subInv, b64Shift, protectionScripts, accessControlScripts) {
+        const v = {
+            enc:   randVar('_e'),
+            out:   randVar('_d'),
+            bytes: randVar('_b'),
+            k1:    randVar('_k'),
+            k2:    randVar('_m'),
+        };
+
+        const rc4Fn = rc4Encryption.checked ? `
+function ${v.k2}(k,d){var S=[],j=0,i,t;for(i=0;i<256;i++)S[i]=i;for(i=0;i<256;i++){j=(j+S[i]+k.charCodeAt(i%k.length))&255;t=S[i];S[i]=S[j];S[j]=t;}i=0;j=0;return d.map(function(b){i=(i+1)&255;j=(j+S[i])&255;t=S[i];S[i]=S[j];S[j]=t;return b^S[(S[i]+S[j])&255];});}` : '';
+
+        let decodePipeline = '';
+
+        if (multiLayerEncoding.checked) {
+            decodePipeline += `var ${v.enc}=atob(atob(atob("${b64}")));`;
+        } else {
+            decodePipeline += `var ${v.enc}="${b64}";`;
+        }
+
+        if (b64Rotation.checked) {
+            decodePipeline += `var _B64='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';${v.enc}=atob(${v.enc}.split('').map(function(c){if(c==='=')return c;var i=_B64.indexOf(c);return i===-1?c:_B64[(i-${b64Shift}+64)%64];}).join(''));`;
+        } else {
+            decodePipeline += `${v.enc}=atob(${v.enc});`;
+        }
+
+        decodePipeline += `var ${v.bytes}=Array.from(${v.enc}).map(function(c){return c.charCodeAt(0);});`;
+
+        if (rc4Encryption.checked) {
+            decodePipeline += `${v.bytes}=${v.k2}(${JSON.stringify(rc4Key)},${v.bytes});`;
+        }
+
+        if (xorEncryption.checked) {
+            const kv = randVar('_x');
+            decodePipeline += `var ${kv}=${JSON.stringify(xorKey)}.split('').map(function(c){return c.charCodeAt(0);});${v.bytes}=${v.bytes}.map(function(b,i){return b^${kv}[i%${kv}.length];});`;
+        }
+
+        if (substitutionCipher.checked) {
+            const sv = randVar('_s');
+            decodePipeline += `var ${sv}=${JSON.stringify(Array.from(subInv))};${v.bytes}=${v.bytes}.map(function(b){return ${sv}[b];});`;
+        }
+
+        decodePipeline += `var ${v.out}=new TextDecoder().decode(new Uint8Array(${v.bytes}));`;
+
+
+        const innerScript = `(function(){try{${accessControlScripts}${rc4Fn}${decodePipeline}` +
+            (iframeIsolation.checked
+                ? `var f=document.getElementById("iso-frame");var d=f.contentWindow.document;d.open();d.write(${v.out});d.close();${protectionScripts}`
+                : `document.getElementById("iso-content").innerHTML=${v.out};${protectionScripts}`) +
+            `}catch(e){console.error("Obfuscation decode error:",e);}})();`;
+
+        if (lzCompression.checked) {
+            const codes = Array.from(innerScript).map(c => c.charCodeAt(0));
+            const cv = randVar('_c');
+            return `<scr`+`ipt>var ${cv}=[${codes.join(',')}];eval(${cv}.map(function(c){return String.fromCharCode(c);}).join(''));</scr`+`ipt>`;
+        }
+
+        return `<scr`+`ipt>${innerScript}</scr`+`ipt>`;
+    }
+
+    function buildProtectionScripts() {
+        let s = '';
+
+        if (blockF12.checked || blockCtrlShiftI.checked || blockCtrlU.checked) {
+            s += `document.addEventListener('keydown',function(e){`;
+            if (blockF12.checked)        s += `if(e.key==='F12'){e.preventDefault();return false;}`;
+            if (blockCtrlShiftI.checked) s += `if(e.ctrlKey&&e.shiftKey&&e.key==='I'){e.preventDefault();return false;}`;
+            if (blockCtrlU.checked)      s += `if(e.ctrlKey&&(e.key==='u'||e.key==='U')){e.preventDefault();return false;}`;
+            s += `});`;
+        }
+
+        if (blockRightClick.checked) {
+            s += `document.addEventListener('contextmenu',function(e){e.preventDefault();return false;});`;
+        }
+
+        if (breakIfDevToolsOpen.checked) {
+            s += `setInterval(function(){var s=performance.now();debugger;if(performance.now()-s>100){document.body.innerHTML='<h1 style="color:#fff;text-align:center;margin-top:20vh">Access Denied</h1>';while(true){}}},1000);`;
+        }
+
+        if (antiTamperProtection.checked) {
+            s += `(function(){var _h=document.documentElement.outerHTML.length;setInterval(function(){if(document.documentElement.outerHTML.length!==_h){location.reload();}},1500);})();`;
+        }
+
+        return s;
+    }
+
+    function buildAccessControlScripts() {
+        let s = '';
+
+        if (passwordProtect.checked && passwordValue.value) {
+            const stored = btoa(passwordValue.value);
+            s += `var _p=prompt("Password required:");if(!_p||btoa(_p)!=="${stored}"){document.body.innerHTML='<h1 style="color:#fff;text-align:center;margin-top:20vh">Access Denied</h1>';throw new Error("auth");}`;
+        }
+
+        if (expiryDate.checked && expiryValue.value) {
+            s += `if(new Date()>new Date("${expiryValue.value}")){document.body.innerHTML='<h1 style="color:#fff;text-align:center;margin-top:20vh">Content Expired</h1>';throw new Error("expired");}`;
+        }
+
+        if (lockToDomain.checked && domainValue.value) {
+            const d = domainValue.value.trim();
+            s += `var _hn=location.hostname;if(_hn!=="${d}"&&!_hn.endsWith(".${d}")){document.body.innerHTML='<h1 style="color:#fff;text-align:center;margin-top:20vh">Domain Restricted</h1>';throw new Error("domain");}`;
+        }
+
+        if (watermarkSignature.checked && watermarkValue.value) {
+            s += `/* ${btoa(watermarkValue.value)} */`;
+        }
+
+        return s;
+    }
+
+    function buildFinalOutput(b64, xorKey, rc4Key, subKey, subInv, b64Shift, protectionScripts, accessControlScripts) {
+        const decoderScript = buildDecoderScript(b64, xorKey, rc4Key, subKey, subInv, b64Shift, protectionScripts, accessControlScripts);
+
+        let out = `<!DOCTYPE html>\n<html>\n<head>\n<meta charset="UTF-8">\n</head>\n<body style="margin:0;padding:0;overflow:hidden;background:#000;">`;
+
+        if (iframeIsolation.checked) {
+            out += `\n<iframe id="iso-frame" style="position:fixed;top:0;left:0;width:100vw;height:100vh;border:none;display:block;"></iframe>`;
+        } else {
+            out += `\n<div id="iso-content"></div>`;
+        }
+
+        out += `\n${decoderScript}`;
+        out += `\n<noscript><h1 style="color:#fff;text-align:center;margin-top:20vh">JavaScript is required</h1></noscript>`;
+        out += `\n</body>\n</html>`;
+        return out;
+    }
+
+
+    function hasAnySecurityFeaturesEnabled() {
+        return passwordProtect.checked || expiryDate.checked || watermarkSignature.checked ||
+               lockToDomain.checked || blockF12.checked || blockCtrlShiftI.checked ||
+               blockRightClick.checked || blockCtrlU.checked || breakIfDevToolsOpen.checked ||
+               antiTamperProtection.checked;
+    }
+
+    function obfuscate() {
+        const html = inputBox.value.trim();
+        if (!html) { showToast("Paste some HTML first!", "error"); return; }
+        if (hasAnySecurityFeaturesEnabled() && !proceedWithObfuscation) {
+            showWarningModal(); return;
+        }
+        proceedWithObfuscation = false;
+        performObfuscation();
+    }
+
+    function continueObfuscation() {
+        proceedWithObfuscation = true;
+        hideWarningModal();
+        performObfuscation();
+    }
+
+    function performObfuscation() {
+        let html = inputBox.value.trim();
+
+        status.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Obfuscating...";
+        status.className = "status processing";
+        outputBox.value = "";
+
+        setTimeout(() => {
+            try {
+                if (minifyInput.checked) {
+                    html = html.replace(/<!--[\s\S]*?-->/g, '').replace(/\s{2,}/g, ' ').replace(/>\s+</g, '><').trim();
+                }
+
+                const { b64, xorKey, rc4Key, subKey, subInv, b64Shift } = buildEncodedPayload(html);
+                const prot  = buildProtectionScripts();
+                const acl   = buildAccessControlScripts();
+                const final = buildFinalOutput(b64, xorKey, rc4Key, subKey, subInv, b64Shift, prot, acl);
+
+                outputBox.value = final;
+                status.innerHTML = "<i class='fas fa-check-circle'></i> Obfuscation complete!";
+                status.className = "status success";
+
+                const inc = Math.round(((final.length - html.length) / html.length) * 100);
+                sizeIncrease.textContent = (inc >= 0 ? '+' : '') + inc + '%';
+
+                showToast("Done!", "success");
+            } catch (err) {
+                status.innerHTML = "<i class='fas fa-exclamation-circle'></i> Error: " + err.message;
+                status.className = "status error";
+                showToast("Obfuscation error", "error");
+                console.error(err);
+            }
+        }, 400);
+    }
+
+
+    function createParticles() {
+        for (let i = 0; i < 15; i++) {
+            const p = document.createElement('div');
+            p.classList.add('bg-particle');
+            const sz = Math.random() * 18 + 4;
+            p.style.cssText = `width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;opacity:${(Math.random()*0.2+0.05).toFixed(2)};animation-duration:${(Math.random()*18+10).toFixed(1)}s;animation-delay:${(Math.random()*5).toFixed(1)}s`;
+            animatedBg.appendChild(p);
+        }
+    }
+
+    function selectTemplate(name) {
+        currentTemplate = name;
+        document.querySelectorAll('.template-card').forEach(c => c.classList.remove('active'));
+        document.querySelector(`.template-card[data-template="${name}"]`).classList.add('active');
+        if (name === 'custom') { showToast("Custom template — configure manually", "success"); return; }
+        const t = templates[name];
+        base64Encode.checked        = t.base64Encode;
+        iframeIsolation.checked     = t.iframeIsolation;
+        minifyInput.checked         = t.minifyInput;
+        xorEncryption.checked       = t.xorEncryption;
+        lzCompression.checked       = t.lzCompression;
+        rc4Encryption.checked       = t.rc4Encryption;
+        multiLayerEncoding.checked  = t.multiLayerEncoding;
+        substitutionCipher.checked  = t.substitutionCipher;
+        b64Rotation.checked         = t.b64Rotation;
+        blockF12.checked            = t.blockF12;
+        blockCtrlShiftI.checked     = t.blockCtrlShiftI;
+        blockRightClick.checked     = t.blockRightClick;
+        blockCtrlU.checked          = t.blockCtrlU;
+        breakIfDevToolsOpen.checked = t.breakIfDevToolsOpen;
+        antiTamperProtection.checked= t.antiTamperProtection;
+        passwordProtect.checked     = t.passwordProtect;
+        expiryDate.checked          = t.expiryDate;
+        watermarkSignature.checked  = t.watermarkSignature;
+        lockToDomain.checked        = t.lockToDomain;
+        document.getElementById('passwordInput').style.display   = t.passwordProtect   ? 'block' : 'none';
+        document.getElementById('expiryInput').style.display     = t.expiryDate        ? 'block' : 'none';
+        document.getElementById('watermarkInput').style.display  = t.watermarkSignature? 'block' : 'none';
+        document.getElementById('domainInput').style.display     = t.lockToDomain      ? 'block' : 'none';
+        showToast(`${t.name} template applied`, "success");
+    }
+
+    function updateStats() {
+        const t = inputBox.value;
+        charCount.textContent = t.length;
+        lineCount.textContent = t.split('\n').length;
+    }
+
+    function toggleSetting(id) {
+        const cb = document.getElementById(id);
+        cb.checked = !cb.checked;
+        if (id === 'passwordProtect')    document.getElementById('passwordInput').style.display   = cb.checked ? 'block' : 'none';
+        if (id === 'expiryDate')         document.getElementById('expiryInput').style.display     = cb.checked ? 'block' : 'none';
+        if (id === 'watermarkSignature') document.getElementById('watermarkInput').style.display  = cb.checked ? 'block' : 'none';
+        if (id === 'lockToDomain')       document.getElementById('domainInput').style.display     = cb.checked ? 'block' : 'none';
+        if (currentTemplate !== 'custom' && templates[currentTemplate]) {
+            const t = templates[currentTemplate];
+            const mismatch = [
+                ['base64Encode',base64Encode],['iframeIsolation',iframeIsolation],['minifyInput',minifyInput],
+                ['xorEncryption',xorEncryption],['lzCompression',lzCompression],['rc4Encryption',rc4Encryption],
+                ['multiLayerEncoding',multiLayerEncoding],['substitutionCipher',substitutionCipher],['b64Rotation',b64Rotation],
+                ['blockF12',blockF12],['blockCtrlShiftI',blockCtrlShiftI],
+                ['blockRightClick',blockRightClick],['blockCtrlU',blockCtrlU],['breakIfDevToolsOpen',breakIfDevToolsOpen],
+                ['antiTamperProtection',antiTamperProtection],['passwordProtect',passwordProtect],
+                ['expiryDate',expiryDate],['watermarkSignature',watermarkSignature],['lockToDomain',lockToDomain]
+            ].some(([k, el]) => el.checked !== t[k]);
+            if (mismatch) {
+                currentTemplate = 'custom';
+                document.querySelectorAll('.template-card').forEach(c => c.classList.remove('active'));
+                document.querySelector('.template-card[data-template="custom"]').classList.add('active');
+            }
+        }
+    }
+
+
+    fileInput.addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const r = new FileReader();
+        r.onload = ev => { inputBox.value = ev.target.result; updateStats(); showToast("File loaded", "success"); };
+        r.readAsText(file);
+    });
+
+    fileInputArea.addEventListener('dragover', e => { e.preventDefault(); fileInputArea.classList.add('dragover'); });
+    fileInputArea.addEventListener('dragleave', () => fileInputArea.classList.remove('dragover'));
+    fileInputArea.addEventListener('drop', e => {
+        e.preventDefault();
+        fileInputArea.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        if (file && (file.type === 'text/html' || /\.html?$/.test(file.name))) {
+            const r = new FileReader();
+            r.onload = ev => { inputBox.value = ev.target.result; updateStats(); showToast("File loaded", "success"); };
+            r.readAsText(file);
+        } else {
+            showToast("Drop a valid HTML file", "error");
+        }
+    });
+
+
+    function copyOutput() {
+        if (!outputBox.value) { showToast("Nothing to copy", "error"); return; }
+        outputBox.select();
+        document.execCommand('copy');
+        showToast("Copied to clipboard!", "success");
+    }
+
+    function showDownloadModal() {
+        if (!outputBox.value) { showToast("Nothing to download", "error"); return; }
+        downloadModal.style.display = 'flex';
+        filenameInput.focus();
+    }
+
+    function hideDownloadModal() { downloadModal.style.display = 'none'; }
+
+    function downloadOutput() {
+        const name = (filenameInput.value.trim() || 'obfuscated') + '.html';
+        const blob = new Blob([outputBox.value], {type: 'text/html'});
+        const a = Object.assign(document.createElement('a'), {href: URL.createObjectURL(blob), download: name});
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+        hideDownloadModal();
+        showToast("Downloaded!", "success");
+    }
+
+    function showZipModal() {
+        if (!outputBox.value) { showToast("Nothing to export", "error"); return; }
+        zipModal.style.display = 'flex';
+        zipFilenameInput.focus();
+    }
+
+    function hideZipModal() { zipModal.style.display = 'none'; }
+
+    function exportAsZip() {
+        const base = zipFilenameInput.value.trim() || 'obfuscated';
+        const zip  = new JSZip();
+        zip.file(`${base}.html`, outputBox.value);
+        const readme = `HTML Obfuscator Export\n======================\n\nFile: ${base}.html\nSize change: ${sizeIncrease.textContent}\n\nLayers applied:\n${getAppliedFeaturesList()}\n\nGenerated: ${new Date().toLocaleString()}\n`;
+        zip.file("README.txt", readme);
+        zip.generateAsync({type: "blob"}).then(blob => {
+            const a = Object.assign(document.createElement('a'), {href: URL.createObjectURL(blob), download: `${base}.zip`});
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(a.href);
+            hideZipModal();
+            showToast("ZIP exported!", "success");
+        });
+    }
+
+    function getAppliedFeaturesList() {
+        const feats = [];
+        if (base64Encode.checked)        feats.push("✓ Base64 Encode");
+        if (iframeIsolation.checked)     feats.push("✓ iFrame Isolation");
+        if (minifyInput.checked)         feats.push("✓ Minification");
+        if (xorEncryption.checked)       feats.push("✓ XOR Encryption");
+        if (rc4Encryption.checked)       feats.push("✓ RC4 Encryption");
+        if (multiLayerEncoding.checked)  feats.push("✓ Multi-layer Encoding");
+        if (substitutionCipher.checked)  feats.push("✓ Substitution Cipher");
+        if (b64Rotation.checked)         feats.push("✓ Base64 Alphabet Rotation");
+        if (lzCompression.checked)       feats.push("✓ Char-code Scatter");
+        if (blockF12.checked)            feats.push("✓ Block F12");
+        if (blockCtrlShiftI.checked)     feats.push("✓ Block Ctrl+Shift+I");
+        if (blockRightClick.checked)     feats.push("✓ Block Right Click");
+        if (blockCtrlU.checked)          feats.push("✓ Block Ctrl+U");
+        if (breakIfDevToolsOpen.checked) feats.push("✓ DevTools Detection");
+        if (antiTamperProtection.checked)feats.push("✓ Anti-Tamper");
+        if (passwordProtect.checked)     feats.push("✓ Password Protection");
+        if (expiryDate.checked)          feats.push("✓ Expiry Date");
+        if (watermarkSignature.checked)  feats.push("✓ Watermark");
+        if (lockToDomain.checked)        feats.push("✓ Domain Lock");
+        return feats.join('\n');
+    }
+
+    function previewOutput() {
+        if (!outputBox.value) { showToast("Nothing to preview", "error"); return; }
+        previewFrame.src = URL.createObjectURL(new Blob([outputBox.value], {type: 'text/html'}));
+        previewModal.style.display = 'flex';
+    }
+
+    function hidePreview() {
+        previewModal.style.display = 'none';
+        if (previewFrame.src) { URL.revokeObjectURL(previewFrame.src); previewFrame.src = ''; }
+    }
+
+    function showWarningModal() { warningModal.style.display = 'flex'; }
+    function hideWarningModal() { warningModal.style.display = 'none'; }
+
+    function clearAll() {
+        inputBox.value = outputBox.value = '';
+        status.innerHTML = ''; status.className = '';
+        charCount.textContent = lineCount.textContent = '0';
+        sizeIncrease.textContent = '0%';
+        selectTemplate('recommended');
+        showToast("Cleared", "success");
+    }
+
+    function showToast(msg, type) {
+        toast.textContent = msg;
+        toast.className = 'toast';
+        toast.style.borderLeftColor = type === 'success' ? 'var(--accent-color)' : 'var(--red-primary)';
+        setTimeout(() => toast.classList.add('show'), 80);
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    filenameInput.addEventListener('keypress',    e => { if (e.key === 'Enter') downloadOutput(); });
+    zipFilenameInput.addEventListener('keypress', e => { if (e.key === 'Enter') exportAsZip(); });
+
+    window.onclick = e => {
+        if (e.target === downloadModal) hideDownloadModal();
+        if (e.target === zipModal)      hideZipModal();
+        if (e.target === warningModal)  hideWarningModal();
+        if (e.target === previewModal)  hidePreview();
+    };
+
+    function init() {
+        createParticles();
+        const d = new Date(); d.setDate(d.getDate() + 30);
+        expiryValue.value = d.toISOString().split('T')[0];
+        selectTemplate('recommended');
+    }
+
+    window.onload = init;
+    </script>
+</body>
+</html>
