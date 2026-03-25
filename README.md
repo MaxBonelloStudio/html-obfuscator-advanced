@@ -2,7 +2,7 @@
 
 The license allows distribution **with credits**. The original creator is **Mohtasim Billah Jitu**.  
 This is a forked project with additional protection features, but it **may become outdated** as it will not be updated as frequently AND may contain unmaintained bugs/glitches
-
+This project has bug fixes and more encryption layers
 ---
 
 # RED-X FORK HTML Obfuscator
