@@ -84,4 +84,4 @@ Forked and enhanced for additional protection features.
 
 ## 📄 License
 
-MIT License — Free to use, modify & distribute **with credits to the original creator**.
+MIT License Free to use, modify & distribute **with credits to the original creator @ MaxBonelloStudios for applying new features @ bug fixes**.
