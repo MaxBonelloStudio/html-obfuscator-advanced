@@ -1,7 +1,7 @@
 # ⚠️ License & Fork Notice
 
 The license allows distribution **with credits**. The original creator is **Mohtasim Billah Jitu**.  
-This is a forked project with additional protection features, but it **may become outdated** as it will not be updated as frequently.
+This is a forked project with additional protection features, but it **may become outdated** as it will not be updated as frequently AND may contain unmaintained bugs/glitches
 
 ---
 
