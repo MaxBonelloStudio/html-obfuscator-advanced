@@ -5,7 +5,7 @@ This is a forked project with additional protection features, but it **may becom
 
 ---
 
-# RED-X HTML Obfuscator
+# RED-X FORK HTML Obfuscator
 
 A powerful, client-side HTML obfuscation tool with military-grade protection features. Protect your HTML code from inspection, copying, and reverse engineering.
 
